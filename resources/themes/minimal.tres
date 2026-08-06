@@ -1,0 +1,172 @@
+[gd_resource type="Theme" load_steps=12 format=3]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_normal"]
+bg_color = Color(0.129412, 0.109804, 0.098039, 1)
+border_width_left = 2.1
+border_width_top = 2.1
+border_width_right = 2.1
+border_width_bottom = 2.1
+border_color = Color(0.803922, 0.427451, 0.172549, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hover"]
+bg_color = Color(0.172549, 0.145098, 0.129412, 1)
+border_width_left = 2.1
+border_width_top = 2.1
+border_width_right = 2.1
+border_width_bottom = 2.1
+border_color = Color(0.909804, 0.529412, 0.290196, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pressed"]
+bg_color = Color(0.090196, 0.074510, 0.062745, 1)
+border_width_left = 2.1
+border_width_top = 2.1
+border_width_right = 2.1
+border_width_bottom = 2.1
+border_color = Color(0.658824, 0.333333, 0.121569, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_disabled"]
+bg_color = Color(0.137255, 0.137255, 0.137255, 0.75)
+border_width_left = 2.1
+border_width_top = 2.1
+border_width_right = 2.1
+border_width_bottom = 2.1
+border_color = Color(0.352941, 0.352941, 0.352941, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_focus"]
+draw_center = false
+border_width_left = 2.1
+border_width_top = 2.1
+border_width_right = 2.1
+border_width_bottom = 2.1
+border_color = Color(0.909804, 0.529412, 0.290196, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.129412, 0.109804, 0.098039, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.803922, 0.427451, 0.172549, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_window_titlebar"]
+bg_color = Color(0.803922, 0.427451, 0.172549, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_window_close"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_scrollbar_grabber"]
+bg_color = Color(0.803922, 0.427451, 0.172549, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_scrollbar_grabber_highlight"]
+bg_color = Color(0.909804, 0.529412, 0.290196, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slider_track"]
+bg_color = Color(0.129412, 0.109804, 0.098039, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.803922, 0.427451, 0.172549, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[resource]
+default_font_size = 20
+
+Button/colors/font_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_color = Color(1, 1, 1, 1)
+Button/colors/font_pressed_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+Button/colors/font_focus_color = Color(1, 1, 1, 1)
+Button/colors/font_disabled_color = Color(0.541176, 0.541176, 0.541176, 1)
+Button/font_sizes/font_size = 20
+Button/styles/normal = SubResource("StyleBoxFlat_normal")
+Button/styles/hover = SubResource("StyleBoxFlat_hover")
+Button/styles/pressed = SubResource("StyleBoxFlat_pressed")
+Button/styles/hover_pressed = SubResource("StyleBoxFlat_pressed")
+Button/styles/disabled = SubResource("StyleBoxFlat_disabled")
+Button/styles/focus = SubResource("StyleBoxFlat_focus")
+
+Label/colors/font_color = Color(0.9, 0.9, 0.93, 1)
+Label/font_sizes/font_size = 18
+
+Panel/styles/panel = SubResource("StyleBoxFlat_panel")
+
+ScrollContainer/styles/panel = SubResource("StyleBoxFlat_panel")
+
+WindowTitleBar/styles/panel = SubResource("StyleBoxFlat_window_titlebar")
+
+WindowTitleLabel/colors/font_color = Color(1, 1, 1, 1)
+WindowTitleLabel/font_sizes/font_size = 20
+
+WindowCloseButton/styles/normal = SubResource("StyleBoxEmpty_window_close")
+WindowCloseButton/styles/hover = SubResource("StyleBoxEmpty_window_close")
+WindowCloseButton/styles/pressed = SubResource("StyleBoxEmpty_window_close")
+WindowCloseButton/styles/focus = SubResource("StyleBoxEmpty_window_close")
+WindowCloseButton/styles/disabled = SubResource("StyleBoxEmpty_window_close")
+WindowCloseButton/colors/font_color = Color(1, 1, 1, 1)
+WindowCloseButton/colors/font_hover_color = Color(1, 1, 1, 1)
+WindowCloseButton/font_sizes/font_size = 20
+
+VScrollBar/styles/grabber = SubResource("StyleBoxFlat_scrollbar_grabber")
+VScrollBar/styles/grabber_highlight = SubResource("StyleBoxFlat_scrollbar_grabber_highlight")
+VScrollBar/styles/grabber_pressed = SubResource("StyleBoxFlat_scrollbar_grabber_highlight")
+
+HSlider/styles/slider = SubResource("StyleBoxFlat_slider_track")
+HSlider/styles/grabber_area = SubResource("StyleBoxFlat_scrollbar_grabber")
+HSlider/styles/grabber_area_highlight = SubResource("StyleBoxFlat_scrollbar_grabber_highlight")

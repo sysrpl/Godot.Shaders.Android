@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "gigauser",
+  "classifications": ["Godot", "Game", "3D", "Android"],
+  "identity": "GodotDotNet.Android3D",
+  "name": "Godot 4.7 + .NET 8 3D (Android/Windows/Linux)",
+  "shortName": "android3d",
+  "sourceName": "fractals",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "symbols": {
+    "PackageId": {
+      "type": "parameter",
+      "datatype": "string",
+      "defaultValue": "org.godotdemo.scaffoldproject",
+      "replaces": "org.godotdemo.scaffoldproject",
+      "description": "Android application package id (reverse-DNS style, lowercase)."
+    }
+  },
+  "sources": [
+    {
+      "exclude": ["README.md", ".git/**", ".gitignore"],
+      "modifiers": [
+        {
+          "copyOnly": ["android/**"]
+        }
+      ]
+    }
+  ],
+  "postActions": [
+    {
+      "condition": "(OS != \"Windows_NT\")",
+      "description": "Mark shell scripts as executable",
+      "manualInstructions": [
+        { "text": "Run 'chmod +x *.sh'" }
+      ],
+      "actionId": "cb9a6cf3-4f5c-4860-b9d2-03a574959774",
+      "args": {
+        "+x": "*.sh"
+      },
+      "continueOnError": true
+    }
+  ]
+}
