@@ -69,7 +69,7 @@ mat3 lookAt(vec3 p)
 void fragment()
 {
 	vec2 resolution = 1.0 / SCREEN_PIXEL_SIZE;
-	vec2 fragCoord = UV * resolution;
+	vec2 fragCoord = vec2(UV.x, 1.0 - UV.y) * resolution;
 
 	vec2 uv = (-resolution.xy + 2.0 * fragCoord.xy) / resolution.y;
 	float ms = -1.0 + 2.0 * mouse.y / resolution.y;

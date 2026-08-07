@@ -188,7 +188,7 @@ vec2 raymarch(vec3 ro, vec3 rd, float steps)
 void fragment()
 {
 	vec2 resolution = 1.0 / SCREEN_PIXEL_SIZE;
-	vec2 fragCoord = UV * resolution;
+	vec2 fragCoord = vec2(UV.x, 1.0 - UV.y) * resolution;
 	vec2 uv = (fragCoord - 0.5 * resolution) / resolution.y;
 
 	vec3 ro = vec3(uv * 6.0, -4.0);

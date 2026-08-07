@@ -51,14 +51,14 @@ float sdBase(in vec3 p)
 #define RAD(r) ((r) * (r) * 0.7)
 #define SPH(i, f, c) length(f - c) - RAD(hash(i + c))
 
-	return min(min(min(SPH(i, f, vec3(0, 0, 0)),
-					   SPH(i, f, vec3(0, 0, 1))),
-				   min(SPH(i, f, vec3(0, 1, 0)),
-					   SPH(i, f, vec3(0, 1, 1)))),
-			   min(min(SPH(i, f, vec3(1, 0, 0)),
-					   SPH(i, f, vec3(1, 0, 1))),
-				   min(SPH(i, f, vec3(1, 1, 0)),
-					   SPH(i, f, vec3(1, 1, 1)))));
+	return min(min(min(SPH(i, f, vec3(0.0, 0.0, 0.0)),
+					   SPH(i, f, vec3(0.0, 0.0, 1.0))),
+				   min(SPH(i, f, vec3(0.0, 1.0, 0.0)),
+					   SPH(i, f, vec3(0.0, 1.0, 1.0)))),
+			   min(min(SPH(i, f, vec3(1.0, 0.0, 0.0)),
+					   SPH(i, f, vec3(1.0, 0.0, 1.0))),
+				   min(SPH(i, f, vec3(1.0, 1.0, 0.0)),
+					   SPH(i, f, vec3(1.0, 1.0, 1.0)))));
 }
 
 //---------------------------------------------------------------
@@ -174,7 +174,7 @@ float calcSoftShadow(vec3 ro, vec3 rd, float tmin, float tmax, float w)
 void fragment()
 {
 	vec2 resolution = 1.0 / SCREEN_PIXEL_SIZE;
-	vec2 fragCoord = UV * resolution;
+	vec2 fragCoord = vec2(UV.x, 1.0 - UV.y) * resolution;
 
 	// pixel coordinates
 	vec2 p = (2.0 * fragCoord - resolution) / resolution.y;

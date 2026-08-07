@@ -417,7 +417,7 @@ public partial class Main : Node3D
         string firstLine = file.GetLine();
         return firstLine.StartsWith(ShaderTitlePrefix)
             ? firstLine.Substring(ShaderTitlePrefix.Length).Trim()
-            : "";
+            : Path.GetFileNameWithoutExtension(path);
     }
 
     private void SetRenderShader(string path)

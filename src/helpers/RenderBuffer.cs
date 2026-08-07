@@ -19,7 +19,7 @@ namespace Codebot.Godot;
 public partial class RenderBuffer : Node
 {
     public const int MinShrink = 1;
-    public const int MaxShrink = 5;
+    public const int MaxShrink = 6;
 
     private SubViewport _viewport;
     private SubViewportContainer _container;

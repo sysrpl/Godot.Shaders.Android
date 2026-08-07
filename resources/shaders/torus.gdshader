@@ -91,7 +91,7 @@ vec2 march(vec3 pos, vec3 dir, inout vec3 h, inout vec3 retCol)
 void fragment()
 {
 	vec2 resolution = 1.0 / SCREEN_PIXEL_SIZE;
-	vec2 fragCoord = UV * resolution;
+	vec2 fragCoord = vec2(UV.x, 1.0 - UV.y) * resolution;
 
 	float localTime = TIME * 0.125;
 	vec3 col = vec3(0.0, 0.0, 0.0);
