@@ -2,12 +2,6 @@
 // point-mode CurveLabel at the click position. Comment this out to disable.
 // #define POINTINGTEXT
 
-// Toggles the curve-preview test hookup below: left-click anywhere to drop
-// a curve-mode CurveLabel (with Debug on, so the curve itself is drawn as a
-// red stroke on top of the text) at the click position. Comment this out
-// to disable.
-// #define CURVEDTEXT
-
 using Godot;
 using Codebot.Godot;
 using System.Xml.Linq;
@@ -22,24 +16,26 @@ public partial class Main : Node3D
 
     private const float TransitionSeconds = 1.0f;
     private const float SwipeThreshold = 80f;
-    private const int TitleBottomMargin = 40;
+    private const int TitleBottomMargin = 50;
     private const string SettingsPath = "user://settings.tres";
     private const int DefaultScale = 4;
+
+    private const string TitleFontPath = "res://resources/fonts/aladin_regular.ttf";
+    private const int TitleFontSize = 42;
+    private const float TitleCurveAmplitude = 40f;
+    // Index/x of _titleCurve's middle point (see the AddPoint calls in
+    // _Ready), animated in _Process. Bob amplitude stays within
+    // TitleCurveAmplitude so it can't reach past the headroom
+    // sliderBottomMargin already reserves above the title.
+    private const int TitleMiddlePointIndex = 2;
+    private const float TitleMiddlePointX = 800f;
+    private const float TitleBobSpeed = 2f;
+    private const float TitleBobAmplitude = 30f;
+    private const float TitleFadeSeconds = 0.2f;
 
 #if POINTINGTEXT
     private const string PointingTextFontPath = "res://resources/fonts/aladin_regular.ttf";
     private Font _pointingTextFont;
-#endif
-
-#if CURVEDTEXT
-    private const string CurvedTextFontPath = "res://resources/fonts/aladin_regular.ttf";
-    private const int CurveMiddlePointIndex = 2;
-    private const float CurveMiddlePointX = 320f;
-    private const float CurveBobSpeed = 2f;
-    private const float CurveBobAmplitude = 30f;
-    private Font _curvedTextFont;
-    private Curve2D _curveTestCurve;
-    private CurveLabel _curveTestLabel;
 #endif
 
     private void Quit()
@@ -58,8 +54,10 @@ public partial class Main : Node3D
     private ColorRect _renderAreaA;
     private ColorRect _renderAreaB;
     private ColorRect _activeRenderArea;
-    private Label _titleLabelA;
-    private Label _titleLabelB;
+    private Font _titleFont;
+    private Curve2D _titleCurve;
+    private CurveLabel _titleLabel;
+    private Control _titleAnchor;
     private Label _fpsLabel;
     private TextureRect _hudImage;
     // Text-placement anchors read out of hud.svg itself (the "percent" and
@@ -90,38 +88,6 @@ public partial class Main : Node3D
         _pointingTextFont = GD.Load<Font>(PointingTextFontPath);
 #endif
 
-#if CURVEDTEXT
-        // A basic gentle wave, starting at its own origin and running
-        // rightward. Each point gets a horizontal in/out tangent handle
-        // (half the 160px point spacing) so the curve actually bends
-        // smoothly through the points instead of degenerating into
-        // straight segments - AddPoint's in/out default to Vector2.Zero,
-        // which puts the Bezier control points on top of the point itself.
-        _curveTestCurve = new Curve2D();
-        _curveTestCurve.AddPoint(new Vector2(0, 0), Vector2.Zero, new Vector2(80, 0));
-        _curveTestCurve.AddPoint(new Vector2(160, -40), new Vector2(-80, 0), new Vector2(80, 0));
-        _curveTestCurve.AddPoint(new Vector2(320, 0), new Vector2(-80, 0), new Vector2(80, 0));
-        _curveTestCurve.AddPoint(new Vector2(480, -40), new Vector2(-80, 0), new Vector2(80, 0));
-        _curveTestCurve.AddPoint(new Vector2(640, 0), new Vector2(-80, 0), Vector2.Zero);
-
-        _curvedTextFont = GD.Load<Font>(CurvedTextFontPath);
-        _curveTestLabel = new CurveLabel
-        {
-            Font = _curvedTextFont,
-            FontSize = 42,
-            FontColor = Colors.White,
-            OutlineColor = Colors.Aquamarine,
-            OutlineSize = 5,
-            Mode = CurveLabelMode.Curve,
-            Alignment = TextAlignment.Centered,
-            Curve = _curveTestCurve,
-            Debug = false,
-            Visible = false,
-        };
-        _curveTestLabel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        _canvas.AddChild(_curveTestLabel);
-#endif
-
         _renderBuffer = new RenderBuffer();
         AddChild(_renderBuffer);
         // Skip the extra offscreen-buffer copy entirely once the slider is
@@ -138,12 +104,45 @@ public partial class Main : Node3D
         _activeRenderArea = _renderAreaA;
 
         // Parented to the canvas (full resolution), not the render areas,
-        // so the title text isn't downscaled along with the shader - their
-        // slide during a transition is instead synced manually in
-        // TransitionToShader.
-        _titleLabelA = CreateTitleLabel();
-        _titleLabelB = CreateTitleLabel();
-        _titleLabelB.Visible = false;
+        // so the title text isn't downscaled along with the shader. One
+        // persistent CurveLabel rather than a pair that slide past each
+        // other - its Text just swaps once TransitionToShader's tween
+        // finishes moving the new shader fully into view. The curve shape
+        // never changes; positioning is handled by _titleAnchor below.
+        _titleFont = GD.Load<Font>(TitleFontPath);
+        _titleCurve = new Curve2D();
+        _titleCurve.AddPoint(new Vector2(0, 0), Vector2.Zero, new Vector2(200, 0));
+        _titleCurve.AddPoint(new Vector2(400, -40), new Vector2(-200, 0), new Vector2(200, 0));
+        _titleCurve.AddPoint(new Vector2(800, 0), new Vector2(-200, 0), new Vector2(200, 0));
+        _titleCurve.AddPoint(new Vector2(1200, -40), new Vector2(-200, 0), new Vector2(200, 0));
+        _titleCurve.AddPoint(new Vector2(1600, 0), new Vector2(-200, 0), Vector2.Zero);
+        _titleLabel = new CurveLabel
+        {
+            Font = _titleFont,
+            FontSize = TitleFontSize,
+            FontColor = Colors.White,
+            OutlineColor = Colors.Turquoise,
+            OutlineSize = 5,
+            Mode = CurveLabelMode.Curve,
+            Alignment = TextAlignment.Left,
+            // Debug = true,
+            ScrollSpeed = -100,
+            Curve = _titleCurve,
+        };
+        _canvas.AddChild(_titleLabel);
+
+        // A zero-size Control anchored to bottom-center: with Minsize
+        // sizing and no content, its rect collapses to a single point 50px
+        // above the window's bottom edge, horizontally centered - exactly
+        // the point AssociateQuadrant 5 (dead center) resolves to,
+        // regardless of window size. Godot's anchor system keeps it there
+        // across resizes and fires ItemRectChanged when it moves, which is
+        // what drives _titleLabel's redraw (see CurveLabel.Associate).
+        _titleAnchor = new Control { Name = "TitleAnchor" };
+        _canvas.AddChild(_titleAnchor);
+        _titleAnchor.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.CenterBottom, Control.LayoutPresetMode.Minsize, TitleBottomMargin);
+        _titleLabel.Associate = _titleAnchor;
+        _titleLabel.AssociateQuadrant = 5;
 
         SetRenderShader(ShaderDir + "grated.gdshader");
 
@@ -193,11 +192,10 @@ public partial class Main : Node3D
         };
         _canvas.AddChild(_hudFpsLabel);
 
-        // Sits just above the title box - measured from the title's own
-        // rendered height rather than a guessed constant, since that height
-        // is already known (fixed content margins + a single line of text).
+        // Sits just above the title curve - its wave amplitude plus the
+        // font's own line height cover the tallest the title ever gets.
         const float sliderHeight = 24f;
-        float sliderBottomMargin = TitleBottomMargin + _titleLabelA.Size.Y + 16f;
+        float sliderBottomMargin = TitleBottomMargin + TitleCurveAmplitude + _titleFont.GetHeight(TitleFontSize) + 16f;
         _scaleSlider = new HSlider
         {
             Name = "ScaleSlider",
@@ -251,23 +249,20 @@ public partial class Main : Node3D
     {
         // CurveLabel now queues its own redraw when Text/Point/etc. actually
         // change (see CustomControl.SetField), so no manual QueueRedraw()
-        // needed for these two anymore.
+        // needed for these anymore.
         _hudPercentLabel.Text = $"{_renderBuffer.Percent:F0}%";
         _hudFpsLabel.Text = $"{Engine.GetFramesPerSecond()} FPS";
         _scaleSlider.Value = _renderBuffer.Scale;
         _time += (float)delta;
 
-#if CURVEDTEXT
-        _curveTestLabel.LetterSpacing = (float)Math.Abs(Math.Sin(_time)) * 10;
-
-        // SetPointPosition mutates the Curve2D in place rather than
-        // assigning a new one to _curveTestLabel.Curve, so SetField never
-        // sees a changed reference here - this QueueRedraw() is still
-        // needed to pick up the moved point.
-        _curveTestCurve.SetPointPosition(CurveMiddlePointIndex,
-            new Vector2(CurveMiddlePointX, Mathf.Sin(_time * CurveBobSpeed) * CurveBobAmplitude));
-        _curveTestLabel.QueueRedraw();
-#endif
+        // Curve's setter copies points into its own internal Curve2D, so
+        // this mutates _titleLabel's live copy directly (via the getter)
+        // rather than the now-disconnected _titleCurve variable - and,
+        // since it's an in-place point mutation rather than a Point/Curve
+        // property assignment, QueueRedraw() has to be called by hand.
+        _titleLabel.Curve.SetPointPosition(TitleMiddlePointIndex,
+            new Vector2(TitleMiddlePointX, Mathf.Sin(_time * TitleBobSpeed) * TitleBobAmplitude));
+        _titleLabel.QueueRedraw();
     }
 
     // Catches the OS close button (clicking the window's X); our own Quit()
@@ -320,32 +315,6 @@ public partial class Main : Node3D
         return renderArea;
     }
 
-    private static StyleBoxFlat CreatePanelBackground() => new()
-    {
-        BgColor = Colors.Black,
-        ContentMarginLeft = 20,
-        ContentMarginTop = 20,
-        ContentMarginRight = 20,
-        ContentMarginBottom = 20,
-        CornerRadiusTopLeft = 20,
-        CornerRadiusTopRight = 20,
-        CornerRadiusBottomLeft = 20,
-        CornerRadiusBottomRight = 20,
-    };
-
-    private Label CreateTitleLabel()
-    {
-        var label = new Label
-        {
-            Name = "TitleLabel",
-            HorizontalAlignment = HorizontalAlignment.Center,
-        };
-        label.AddThemeStyleboxOverride("normal", CreatePanelBackground());
-        _canvas.AddChild(label);
-        return label;
-    }
-
-    private Label GetTitleLabel(ColorRect renderArea) => renderArea == _renderAreaA ? _titleLabelA : _titleLabelB;
 
     private void StepShader(int direction)
     {
@@ -362,40 +331,20 @@ public partial class Main : Node3D
 
         var outgoing = _activeRenderArea;
         var incoming = outgoing == _renderAreaA ? _renderAreaB : _renderAreaA;
-        var outgoingTitle = GetTitleLabel(outgoing);
-        var incomingTitle = GetTitleLabel(incoming);
 
         incoming.Material = GetOrLoadShaderMaterial(path);
-        incomingTitle.Text = _shaderTitles.TryGetValue(path, out var title) ? title : "";
-        incomingTitle.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.CenterBottom, Control.LayoutPresetMode.Minsize, TitleBottomMargin);
 
         // The render areas live inside RenderBuffer's downscaled SubViewport,
-        // but the titles live directly on the (full-resolution) canvas, so
-        // each needs its slide distance measured in its own viewport.
+        // so the slide distance is measured in that viewport, not the window.
         float bufferWidth = incoming.GetViewport().GetVisibleRect().Size.X;
-        float windowWidth = GetViewport().GetVisibleRect().Size.X;
         // direction > 0 (next/right chevron): incoming enters from the right, outgoing exits to the left.
         // direction < 0 (prev/left chevron): incoming enters from the left, outgoing exits to the right.
         float bufferStartX = direction > 0 ? bufferWidth : -bufferWidth;
         float bufferEndX = -bufferStartX;
-        float windowStartX = direction > 0 ? windowWidth : -windowWidth;
-        float windowEndX = -windowStartX;
 
         incoming.OffsetLeft = bufferStartX;
         incoming.OffsetRight = bufferStartX;
         incoming.Visible = true;
-
-        // Titles are positioned as an offset from their own centered resting
-        // position (captured here) rather than from 0, since that resting
-        // position isn't the same for both titles when their text differs.
-        float incomingTitleLeft = incomingTitle.OffsetLeft;
-        float incomingTitleRight = incomingTitle.OffsetRight;
-        float outgoingTitleLeft = outgoingTitle.OffsetLeft;
-        float outgoingTitleRight = outgoingTitle.OffsetRight;
-
-        incomingTitle.OffsetLeft = incomingTitleLeft + windowStartX;
-        incomingTitle.OffsetRight = incomingTitleRight + windowStartX;
-        incomingTitle.Visible = true;
 
         var tween = CreateTween();
         tween.SetParallel(true);
@@ -411,27 +360,23 @@ public partial class Main : Node3D
             outgoing.OffsetLeft = x;
             outgoing.OffsetRight = x;
         }), 0f, bufferEndX, TransitionSeconds);
-        tween.TweenMethod(Callable.From<float>(x =>
-        {
-            incomingTitle.OffsetLeft = incomingTitleLeft + x;
-            incomingTitle.OffsetRight = incomingTitleRight + x;
-        }), windowStartX, 0f, TransitionSeconds);
-        tween.TweenMethod(Callable.From<float>(x =>
-        {
-            outgoingTitle.OffsetLeft = outgoingTitleLeft + x;
-            outgoingTitle.OffsetRight = outgoingTitleRight + x;
-        }), 0f, windowEndX, TransitionSeconds);
+        // Fades out quickly as the slide starts (rather than over the whole
+        // slide) so the title is already hidden well before the text swap
+        // below, then fades back in once that swap has happened.
+        tween.TweenProperty(_titleLabel, "modulate:a", 0.0, TitleFadeSeconds);
+        // The title only swaps once the incoming shader has fully slid into
+        // place, rather than sliding alongside it like the old dual-label
+        // setup did.
         tween.Chain().TweenCallback(Callable.From(() =>
         {
             outgoing.Visible = false;
             outgoing.OffsetLeft = 0f;
             outgoing.OffsetRight = 0f;
-            outgoingTitle.Visible = false;
-            outgoingTitle.OffsetLeft = outgoingTitleLeft;
-            outgoingTitle.OffsetRight = outgoingTitleRight;
             _activeRenderArea = incoming;
             _isTransitioning = false;
+            _titleLabel.Text = _shaderTitles.TryGetValue(path, out var title) ? title : "";
         }));
+        tween.Chain().TweenProperty(_titleLabel, "modulate:a", 1.0, TitleFadeSeconds);
     }
 
     private ShaderMaterial GetOrLoadShaderMaterial(string path)
@@ -542,9 +487,7 @@ public partial class Main : Node3D
     private void SetRenderShader(string path)
     {
         _activeRenderArea.Material = GetOrLoadShaderMaterial(path);
-        var titleLabel = GetTitleLabel(_activeRenderArea);
-        titleLabel.Text = _shaderTitles.TryGetValue(path, out var title) ? title : "";
-        titleLabel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.CenterBottom, Control.LayoutPresetMode.Minsize, TitleBottomMargin);
+        _titleLabel.Text = _shaderTitles.TryGetValue(path, out var title) ? title : "";
         _currentShaderIndex = _shaderPaths.IndexOf(path);
     }
 
@@ -625,16 +568,15 @@ public partial class Main : Node3D
         _scaleSlider.Value = _scaleSlider.MinValue + t * (_scaleSlider.MaxValue - _scaleSlider.MinValue);
     }
 
-#if POINTINGTEXT || CURVEDTEXT
+#if POINTINGTEXT
     // _UnhandledInput (rather than _Input) so clicks already consumed by
     // the GUI - the quit button, nav circles, the slider - don't also
-    // trigger these test hookups.
+    // trigger this test hookup.
     public override void _UnhandledInput(InputEvent @event)
     {
         if (@event is not InputEventMouseButton mouseButton || mouseButton.ButtonIndex != MouseButton.Left || !mouseButton.Pressed)
             return;
 
-#if POINTINGTEXT
         var label = new CurveLabel
         {
             Text = $"Click at {(int)mouseButton.Position.X}, {(int)mouseButton.Position.Y}",
@@ -650,16 +592,6 @@ public partial class Main : Node3D
         };
         label.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         _canvas.AddChild(label);
-#endif
-
-#if CURVEDTEXT
-        // Reposition the one shared CurveLabel rather than adding a new
-        // one, so only a single test curve (and its label) is ever on
-        // screen at a time.
-        _curveTestLabel.Text = $"You clicked at {(int)mouseButton.Position.X}, {(int)mouseButton.Position.Y}";
-        _curveTestLabel.Point = mouseButton.Position - _curveTestLabel.CurveMiddle;
-        _curveTestLabel.Visible = true;
-#endif
     }
 #endif
 }

@@ -37,9 +37,12 @@ public enum CurveLabelMode
 // of wherever Alignment places its start), or leave it at 0 for a static
 // layout. Point doubles as that curve's offset in curve mode, so the curve
 // can be moved without redefining its points. For point mode, Point is the
-// anchor itself. Only ASCII/BMP characters are supported (glyphs are
-// iterated as plain chars, not Unicode runes, so surrogate pairs would
-// render as two boxes rather than one glyph).
+// anchor itself. Set Associate (plus AssociateQuadrant) instead of updating
+// Point by hand to track another Control that moves or resizes - e.g. one
+// anchored to the window, so this label stays correctly placed across
+// window resizes with no per-frame polling. Only ASCII/BMP characters are
+// supported (glyphs are iterated as plain chars, not Unicode runes, so
+// surrogate pairs would render as two boxes rather than one glyph).
 public partial class CurveLabel : CustomControl
 {
     public CurveLabel()
@@ -48,15 +51,50 @@ public partial class CurveLabel : CustomControl
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
     }
 
-    // Another Control whose Position is added to Point (and to every curve
-    // sample, in curve mode), so this label can track something that moves
-    // - e.g. an image it's meant to label - without recomputing Point by
-    // hand each time. Null means no extra offset.
+    private void HandleRectChanged() => QueueRedraw();
+
+    // Another Control this label tracks: a point on Associate's own rect
+    // (picked by AssociateQuadrant) is added to Point (and to every curve
+    // sample, in curve mode), so the label can follow something that moves
+    // or resizes - e.g. an anchored Control that repositions on window
+    // resize - without recomputing Point by hand each time. Subscribing to
+    // Associate's ItemRectChanged means this label redraws itself whenever
+    // Associate's position or size changes, so callers don't need to poll
+    // or hook their own resize/layout signals. Null means no extra offset.
     private Control _associate = null;
     public Control Associate
     {
         get => _associate;
-        set => SetField(ref _associate, value);
+        set
+        {
+            if (ReferenceEquals(value, _associate))
+                return;
+            if (_associate is not null)
+                _associate.ItemRectChanged -= HandleRectChanged;
+            _associate = value;
+            if (_associate is not null)
+                _associate.ItemRectChanged += HandleRectChanged;
+        }
+    }
+
+    // Which point on Associate's rect to add to Point, as a 1-9 keypad-style
+    // grid in reading order (row-major, not numpad order): 1/2/3 are the
+    // top-left/top-center/top-right corners, 4/5/6 the middle row, 7/8/9
+    // the bottom row - e.g. 8 is bottom-center, 5 is dead center. Values
+    // outside 1-9 are silently ignored (the assignment is a no-op) rather
+    // than clamped or thrown.
+    private int _associateQuadrant = 1;
+    public int AssociateQuadrant
+    {
+        get => _associateQuadrant;
+        set
+        {
+            if (value < 1)
+                return;
+            if (value > 9)
+                return;
+            SetField(ref _associateQuadrant, value);
+        }
     }
 
     private string _text = "";
@@ -115,11 +153,21 @@ public partial class CurveLabel : CustomControl
         set => SetField(ref _mode, value);
     }
 
-    private Curve2D _curve;
+    private Curve2D _curve = new();
     public Curve2D Curve
     {
         get => _curve;
-        set => SetField(ref _curve, value);
+        set
+        {
+            if (ReferenceEquals(_curve, value))
+                return;
+            _curve.ClearPoints();
+            if (value == null)
+                return;
+            for (int i = 0; i < value.PointCount; i++)
+                _curve.AddPoint(value.GetPointPosition(i), value.GetPointIn(i), value.GetPointOut(i));
+            QueueRedraw();
+        }
     }
 
     // Pixels per second to advance along the curve; 0 keeps the layout static.
@@ -170,11 +218,65 @@ public partial class CurveLabel : CustomControl
     public Vector2 CurveMiddle => Curve is null ? Vector2.Zero : Curve.SampleBaked(Curve.GetBakedLength() / 2f, true);
     public Vector2 CurveEnd => Curve is null ? Vector2.Zero : Curve.SampleBaked(Curve.GetBakedLength(), true);
 
+    private Vector2 CurvePointAt(float percent) => Curve is null ? Vector2.Zero : Curve.SampleBaked(percent * Curve.GetBakedLength(), true);
+
     private float _scrollOffset;
 
-    // Point plus Associate's own position, if any - the actual world/local
-    // offset applied to Point and to every curve sample.
-    private Vector2 ComputedPoint => Point + (Associate is null ? Vector2.Zero : Associate.Position);
+    // Point plus the AssociateQuadrant corner/edge/center of Associate's
+    // current global rect (Vector2.Zero contribution if Associate is null).
+    // Recomputed from Associate's live rect on every read rather than
+    // cached, so it's always current even between ItemRectChanged signals.
+    private Vector2 ComputedPoint
+    {
+        get
+        {
+            if (_associate is null)
+                return Point;
+            var r = _associate.GetGlobalRect();
+            var v = r.Position;
+            switch (_associateQuadrant)
+            {
+                case 2:
+                    v.X += r.Size.X / 2;
+                    break;
+                case 3:
+                    v.X += r.Size.X;
+                    break;
+                case 4:
+                    v.Y += r.Size.Y / 2;
+                    break;
+                case 5:
+                    v.X += r.Size.X / 2;
+                    v.Y += r.Size.Y / 2;
+                    break;
+                case 6:
+                    v.X += r.Size.X;
+                    v.Y += r.Size.Y / 2;
+                    break;
+                case 7:
+                    v.Y += r.Size.Y;
+                    break;
+                case 8:
+                    v.X += r.Size.X / 2;
+                    v.Y += r.Size.Y;
+                    break;
+                case 9:
+                    v.X += r.Size.X;
+                    v.Y += r.Size.Y;
+                    break;
+                default:
+                    break;
+            }
+            if (Mode == CurveLabelMode.Curve)
+            {
+                if (Alignment == TextAlignment.Centered)
+                    v -= CurvePointAt(0.5f);
+                else if (Alignment == TextAlignment.Right)
+                    v -= CurvePointAt(1);
+            }
+            return Point + v;
+        }
+    }
 
     public override void _Process(double delta)
     {
@@ -233,11 +335,9 @@ public partial class CurveLabel : CustomControl
     {
         if (Curve == null)
             return;
-
         float length = Curve.GetBakedLength();
         if (length <= 0f)
             return;
-
         // Left starts the text at the curve's own start (arc length 0, the
         // existing/default behavior); Right ends it at the curve's end
         // (arc length `length`); Centered centers it on the curve's
