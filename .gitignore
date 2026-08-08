@@ -9,6 +9,7 @@ helpers.sh
 *.import
 *.uid
 *.mp4
+*.frag
 
 # .NET
 bin/

@@ -1,24 +1,20 @@
 shader_type canvas_item;
 
-// Mouse-driven camera orbit; defaults to "not dragged" (fixed default view),
-// matching the fallback convention used elsewhere (e.g. knot.gdshader).
+const vec4 SPH1 = vec4(0.0, 0.0, 0.0, 1.0);
+
 uniform vec2 mouse = vec2(0.0);
 
-// https://iquilezles.org/articles/spherefunctions/
-float shpIntersect(in vec3 ro, in vec3 rd, in vec4 sph)
+float iSphere(in vec3 ro, in vec3 rd, in vec4 sph)
 {
 	vec3 oc = ro - sph.xyz;
 	float b = dot(rd, oc);
 	float c = dot(oc, oc) - sph.w * sph.w;
 	float h = b * b - c;
 	if (h > 0.0)
-	{
 		h = -b - sqrt(h);
-	}
 	return h;
 }
 
-// https://iquilezles.org/articles/spherefunctions/
 float sphDistance(in vec3 ro, in vec3 rd, in vec4 sph)
 {
 	vec3 oc = ro - sph.xyz;
@@ -27,8 +23,7 @@ float sphDistance(in vec3 ro, in vec3 rd, in vec4 sph)
 	return sqrt(max(0.0, h)) - sph.w;
 }
 
-// https://iquilezles.org/articles/spherefunctions/
-float sphSoftShadow(in vec3 ro, in vec3 rd, in vec4 sph, in float k)
+float calcSoftShadow(in vec3 ro, in vec3 rd, in vec4 sph, in float k)
 {
 	vec3 oc = sph.xyz - ro;
 	float b = dot(oc, rd);
@@ -63,16 +58,12 @@ vec2 voronoi(in vec2 x)
 			vec2 r = g - f + o;
 			float d = dot(r, r);
 			if (d < m.x)
-			{
 				m = vec3(d, o);
-			}
 		}
 	}
 
 	return vec2(sqrt(m.x), m.y + m.z);
 }
-
-//=======================================================
 
 vec3 background(in vec3 d, in vec3 l)
 {
@@ -98,18 +89,14 @@ vec3 background(in vec3 d, in vec3 l)
 	return col;
 }
 
-//--------------------------------------------------------------------
-
-const vec4 sph1 = vec4(0.0, 0.0, 0.0, 1.0);
-
 float rayTrace(in vec3 ro, in vec3 rd)
 {
-	return shpIntersect(ro, rd, sph1);
+	return iSphere(ro, rd, SPH1);
 }
 
 float map(in vec3 pos)
 {
-	vec2 r = pos.xz - sph1.xz;
+	vec2 r = pos.xz - SPH1.xz;
 	float h = 1.0 - 2.0 / (1.0 + 0.3 * dot(r, r));
 	return pos.y - h;
 }
@@ -118,22 +105,16 @@ float rayMarch(in vec3 ro, in vec3 rd, float tmax)
 {
 	float t = 0.0;
 
-	// bounding plane
 	float h = (1.0 - ro.y) / rd.y;
 	if (h > 0.0)
-	{
 		t = h;
-	}
 
-	// raymarch
 	for (int i = 0; i < 20; i++)
 	{
 		vec3 pos = ro + t * rd;
 		float h2 = map(pos);
 		if (h2 < 0.001 || t > tmax)
-		{
 			break;
-		}
 		t += h2;
 	}
 	return t;
@@ -144,14 +125,13 @@ vec3 render(in vec3 ro, in vec3 rd)
 	vec3 lig = normalize(vec3(1.0, 0.2, 1.0));
 	vec3 col = background(rd, lig);
 
-	// raytrace stuff
 	float t = rayTrace(ro, rd);
 
 	if (t > 0.0)
 	{
 		vec3 mat = vec3(0.18);
 		vec3 pos = ro + t * rd;
-		vec3 nor = sphNormal(pos, sph1);
+		vec3 nor = sphNormal(pos, SPH1);
 
 		float am = 0.1 * TIME;
 		vec2 pr = vec2(cos(am), sin(am));
@@ -197,12 +177,9 @@ vec3 render(in vec3 ro, in vec3 rd)
 		col += (1.0 - 0.5 * los) * clamp(1.0 - 2.0 * clouds, 0.0, 1.0) * 0.3 * vec3(0.5, 0.4, 0.3) * tspe * dif;
 	}
 
-	// raymarch stuff
 	float tmax = 20.0;
 	if (t > 0.0)
-	{
 		tmax = t;
-	}
 	t = rayMarch(ro, rd, tmax);
 	if (t < tmax)
 	{
@@ -215,15 +192,14 @@ vec3 render(in vec3 ro, in vec3 rd)
 		wir += 1.0 * exp(-12.0 * abs(scp.y));
 		wir += 0.5 * exp(-4.0 * abs(scp.x));
 		wir += 0.5 * exp(-4.0 * abs(scp.y));
-		wir *= 0.2 + 1.0 * sphSoftShadow(pos, lig, sph1, 4.0);
+		wir *= 0.2 + 1.0 * calcSoftShadow(pos, lig, SPH1, 4.0);
 
 		col += wir * 0.5 * exp(-0.05 * t * t);
 	}
 
-	// outer glow
-	if (dot(rd, sph1.xyz - ro) > 0.0)
+	if (dot(rd, SPH1.xyz - ro) > 0.0)
 	{
-		float d = sphDistance(ro, rd, sph1);
+		float d = sphDistance(ro, rd, SPH1);
 		vec3 glo = vec3(0.0);
 		glo += vec3(0.6, 0.7, 1.0) * 0.3 * exp(-2.0 * abs(d)) * step(0.0, d);
 		glo += 0.6 * vec3(0.6, 0.7, 1.0) * 0.3 * exp(-8.0 * abs(d));
@@ -252,9 +228,6 @@ void fragment()
 
 	vec3 col = vec3(0.0);
 
-	// AA is fixed at 1 in the source, so only the no-supersampling path is
-	// reachable; also drops the source's mainVR() entry point, which has
-	// no Godot equivalent to translate to.
 	vec2 p = (2.0 * fragCoord - resolution) / resolution.y;
 
 	float zo = 1.0 + smoothstep(5.0, 15.0, abs(TIME - 48.0));

@@ -19,7 +19,7 @@ namespace Codebot.Godot;
 public partial class RenderBuffer : Node
 {
     public const int MinShrink = 1;
-    public const int MaxShrink = 6;
+    public const int MaxShrink = 5;
 
     private SubViewport _viewport;
     private SubViewportContainer _container;
@@ -115,13 +115,7 @@ public partial class RenderBuffer : Node
 
     private bool IsDirectRender => _directRender && _scale == MinShrink;
 
-    public void AdjustResolution(bool increase)
-    {
-        if (increase)
-            Scale++;
-        else
-            Scale--;
-    }
+    public float Percent => 1 / MathF.Pow(2, Scale - 1) * 100f;
 
     private int _scale = 1;
     public int Scale
@@ -137,7 +131,7 @@ public partial class RenderBuffer : Node
                 return;
             _scale = value;
             if (_container != null)
-                _container.StretchShrink = _scale;
+                _container.StretchShrink = (int)Math.Pow(2, _scale - 1);
             UpdateRenderMode();
         }
     }

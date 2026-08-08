@@ -12,15 +12,11 @@ vec3 blackbody(float temp)
 	col.x = 56100000.0 * pow(temp, (-3.0 / 2.0)) + 148.0;
 	col.y = 100.04 * log(temp) - 623.6;
 	if (temp > 6500.0)
-	{
 		col.y = 35200000.0 * pow(temp, (-3.0 / 2.0)) + 184.0;
-	}
 	col.z = 194.18 * log(temp) - 1448.6;
 	col = clamp(col, 0.0, 255.0) / 255.0;
 	if (temp < 1000.0)
-	{
 		col *= temp / 1000.0;
-	}
 	return col;
 }
 
@@ -51,13 +47,9 @@ float scene(vec3 p, inout vec3 h, inout vec3 retCol)
 	vec2 oq = q;
 	q = abs(q) - 2.5;
 	if (oq.x < q.x && oq.y > q.y)
-	{
 		rotate(q, ((var * 1.0) + TIME * 0.0) * 3.14 + TIME * 0.0);
-	}
 	else
-	{
 		rotate(q, (0.28 - (var * 1.0) + TIME * 0.0) * 3.14 + TIME * 0.0);
-	}
 	retCol = 1.0 - vec3(0.350, 0.2, 0.3);
 	float mind = length(q) + 0.5 + 1.05 * (length(fract(q * 0.5 * (3.0 + 3.0 * sin(var * 1.0 - TIME * 2.0))) - 0.5) - 1.215);
 	h -= vec3(-3.20, 0.20, 1.0) * vec3(1.0) * 0.0025 / (0.051 + (mind - sin(var * 1.0 - TIME * 2.0 + 3.14) * 0.125) * (mind - sin(var * 1.0 - TIME * 2.0 + 3.14) * 0.125));
@@ -79,9 +71,7 @@ vec2 march(vec3 pos, vec3 dir, inout vec3 h, inout vec3 retCol)
 		dist.x = scene(p, h, retCol);
 		dist.y += dist.x * 0.2;
 		if (log(dist.y * dist.y / dist.x / 1e5) > 0.0 || dist.x < EZ || dist.y > FAR)
-		{
 			break;
-		}
 		s.x++;
 	}
 	s.y = dist.y;

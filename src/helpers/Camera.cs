@@ -113,11 +113,9 @@ public partial class Camera : Node3D
         if (e is InputEventMouseButton mouseButton)
         {
             if (mouseButton.ButtonIndex == MouseButton.Left)
-            {
                 // Track left-button press/release so InputEventMouseMotion
                 // below knows whether the user is currently dragging.
                 _dragging = mouseButton.Pressed;
-            }
             else if (mouseButton.ButtonIndex == MouseButton.WheelUp && _mode == CameraMode.ModeOrbit)
             {
                 _distance = Mathf.Clamp(_distance - ZoomSpeed, MinDistance, MaxDistance);

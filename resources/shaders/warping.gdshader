@@ -1,6 +1,6 @@
 shader_type canvas_item;
 
-const mat2 m = mat2(vec2(0.80, 0.60), vec2(-0.60, 0.80));
+const mat2 M = mat2(vec2(0.80, 0.60), vec2(-0.60, 0.80));
 
 float noise(in vec2 p)
 {
@@ -11,11 +11,11 @@ float fbm4(vec2 p)
 {
 	float f = 0.0;
 	f += 0.5000 * noise(p);
-	p = m * p * 2.02;
+	p = M * p * 2.02;
 	f += 0.2500 * noise(p);
-	p = m * p * 2.03;
+	p = M * p * 2.03;
 	f += 0.1250 * noise(p);
-	p = m * p * 2.01;
+	p = M * p * 2.01;
 	f += 0.0625 * noise(p);
 	return f / 0.9375;
 }
@@ -24,15 +24,15 @@ float fbm6(vec2 p)
 {
 	float f = 0.0;
 	f += 0.500000 * (0.5 + 0.5 * noise(p));
-	p = m * p * 2.02;
+	p = M * p * 2.02;
 	f += 0.250000 * (0.5 + 0.5 * noise(p));
-	p = m * p * 2.03;
+	p = M * p * 2.03;
 	f += 0.125000 * (0.5 + 0.5 * noise(p));
-	p = m * p * 2.01;
+	p = M * p * 2.01;
 	f += 0.062500 * (0.5 + 0.5 * noise(p));
-	p = m * p * 2.04;
+	p = M * p * 2.04;
 	f += 0.031250 * (0.5 + 0.5 * noise(p));
-	p = m * p * 2.01;
+	p = M * p * 2.01;
 	f += 0.015625 * (0.5 + 0.5 * noise(p));
 	return f / 0.96875;
 }
@@ -46,8 +46,6 @@ vec2 fbm6_2(vec2 p)
 {
 	return vec2(fbm6(p + vec2(16.8)), fbm6(p + vec2(11.5)));
 }
-
-//====================================================================
 
 float func(vec2 q, out vec4 ron)
 {
@@ -84,13 +82,10 @@ void fragment()
 	col = mix(col, vec3(0.0, 0.2, 0.4), 0.5 * smoothstep(1.2, 1.3, abs(on.z) + abs(on.w)));
 	col = clamp(col * f * 2.0, 0.0, 1.0);
 
-	// Manual derivatives (better quality, but slower) - the source also has
-	// a #if 0'd-out GPU-derivative (dFdx/dFdy) fast path that's permanently
-	// disabled, so only this branch is reachable.
 	vec4 kk;
 	vec3 nor = normalize(vec3(func(p + vec2(e, 0.0), kk) - f,
-			2.0 * e,
-			func(p + vec2(0.0, e), kk) - f));
+		2.0 * e,
+		func(p + vec2(0.0, e), kk) - f));
 
 	vec3 lig = normalize(vec3(0.9, 0.2, -0.4));
 	float dif = clamp(0.3 + 0.7 * dot(nor, lig), 0.0, 1.0);

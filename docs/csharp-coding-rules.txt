@@ -1,0 +1,23 @@
+C# Coding Rules
+================
+
+These rules apply to every .cs file in src/ (and Main.cs).
+
+1. Single-statement bodies
+   If the body of an if, else, else if, for, foreach, while, or do-while is
+   a single statement, do not wrap it in "{ }" at all - put the statement
+   on the next line, indented once, braceless.
+   Example:
+       for (int i = 0; i < 3; ++i)
+       {
+           p = p + rd * (map(p) - 4.0 * t / resolution.x);
+       }
+       if (d < EPS)
+       {
+           break;
+       }
+   becomes:
+       for (int i = 0; i < 3; ++i)
+           p = p + rd * (map(p) - 4.0 * t / resolution.x);
+       if (d < EPS)
+           break;

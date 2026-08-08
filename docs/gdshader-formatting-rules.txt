@@ -1,0 +1,89 @@
+GDShader Formatting Rules
+==========================
+
+These rules apply to every .gdshader file in resources/shaders/.
+
+1. Comments
+   Remove all comments except the title comment on the first line of the
+   file (the "// title: ..." line used by the app to label each shader).
+
+2. Blank lines
+   Collapse any run of two or more consecutive blank lines down to a
+   single blank line.
+
+3. Parentheses spacing
+   No space immediately after an opening "(" and no space immediately
+   before a closing ")".
+   Function calls and function-like constructors get no space between
+   the name and the "(": vec3(a, b, c), foo(a, b).
+   Control-flow keywords (if, for, while, else if) get a single space
+   before the "(": if (x < 4), for (int i = 0; i < 4; i++).
+
+4. Brace placement
+   Every "{" and every "}" that does have a block goes on its own line
+   (Allman style).
+
+5. Single-statement bodies
+   If the body of an if, else, or for is a single statement, do not wrap
+   it in "{ }" at all - put the statement on the next line, indented once,
+   braceless.
+   Example:
+       for (int i = 0; i < 3; ++i)
+       {
+           p = p + rd * (map(p) - 4.0 * t / resolution.x);
+       }
+       if (d < EPS)
+       {
+           break;
+       }
+   becomes:
+       for (int i = 0; i < 3; ++i)
+           p = p + rd * (map(p) - 4.0 * t / resolution.x);
+       if (d < EPS)
+           break;
+
+6. Redundant scope blocks
+   Remove any bare "{ }" block that isn't the body of an if/for/while/else
+   (i.e. one used only to locally scope a handful of variables). Unindent
+   its contents into the enclosing scope instead.
+   Example:
+       vec4 bumped(vec3 q, float off, float time)
+       {
+           {
+               float an = 2.0 * time * sign(q.y) + off * 6.283185 / 24.0;
+               float co = cos(an);
+               float si = sin(an);
+               q.xz = mat2(vec2(co, -si), vec2(si, co)) * q.xz;
+           }
+   becomes:
+       vec4 bumped(vec3 q, float off, float time)
+       {
+           float an = 2.0 * time * sign(q.y) + off * 6.283185 / 24.0;
+           float co = cos(an);
+           float si = sin(an);
+           q.xz = mat2(vec2(co, -si), vec2(si, co)) * q.xz;
+
+7. Line wrapping
+   If a single statement would be wrapped to multiple lines, the wrapped
+   lines get exactly one indent level beyond the statement's own
+   indentation - not aligned with the "(" or any argument on the first
+   line, and not indented twice.
+   Example (statement itself is indented one level):
+       vec3 nor = normalize(vec3(func(p + vec2(e, 0.0), kk) - f,
+                   2.0 * e,
+                   func(p + vec2(0.0, e), kk) - f));
+   becomes:
+       vec3 nor = normalize(vec3(func(p + vec2(e, 0.0), kk) - f,
+               2.0 * e,
+               func(p + vec2(0.0, e), kk) - f));
+
+8. Shared function naming
+   Common utility functions that recur across multiple shaders (distance
+   functions, smooth min/max, box/sphere intersectors, normal/AO/shadow
+   calculators, camera setup, etc.) use the same name in every shader
+   that defines them, rather than each file's own variant spelling or
+   casing.
+
+9. Constants
+   All constants are named in UPPERCASE and declared together at the top
+   of the file, immediately after the "shader_type canvas_item;" line.

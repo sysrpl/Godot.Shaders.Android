@@ -5,16 +5,15 @@ shader_type canvas_item;
 #define SIN(x) (sin(x) * 0.5 + 0.5)
 #define BUMP_EPS 0.004
 
-uniform samplerCube iChannel0 : source_color;
-
 const highp float NOISE_GRANULARITY = 0.5 / 255.0;
+
+uniform samplerCube iChannel0 : source_color;
 
 mat2 rot(float a)
 {
 	return mat2(vec2(cos(a), -sin(a)), vec2(sin(a), cos(a)));
 }
 
-// zucconis spectral palette https://www.alanzucconi.com/2017/07/15/improving-the-rainbow-2/
 vec3 bump3y(vec3 x, vec3 yoffset)
 {
 	vec3 y = 1.0 - x * x;
@@ -55,9 +54,7 @@ vec3 gamma(vec3 col)
 vec3 waveSpectrum(float w)
 {
 	if (w > 700.0 || w < 400.0)
-	{
 		return vec3(0.0);
-	}
 
 	float x = fract((w - 400.0) / 300.0);
 
@@ -71,8 +68,6 @@ vec3 waveSpectrum(float w)
 
 	vec3 col = bump3y(c1 * (x - x1), y1) + bump3y(c2 * (x - x2), y2);
 
-	// https://twitter.com/Atrix256/status/1019359890660192256
-	// Undo gamma
 	col = invGamma(col);
 
 	return col;
@@ -88,9 +83,7 @@ vec3 diffraction(vec3 rd, vec3 n, vec3 td, vec3 l, float d)
 	float u = abs(cosThetaL - cosThetaV);
 
 	if (u == 0.0)
-	{
 		return vec3(0.0);
-	}
 
 	for (float i = 1.0; i < 2.0; i++)
 	{
@@ -148,21 +141,20 @@ float gridSurf(in vec3 p)
 	return clamp(x, 0.0, 1.0);
 }
 
-// Standard function-based bump mapping function (from Shane)
 vec3 doBumpMap(in vec3 p, in vec3 nor, float bumpfactor)
 {
 	const float eps = BUMP_EPS;
 	float ref = gridSurf(p);
 	vec3 grad = vec3(gridSurf(vec3(p.x - eps, p.y, p.z)) - ref,
-			gridSurf(vec3(p.x, p.y - eps, p.z)) - ref,
-			gridSurf(vec3(p.x, p.y, p.z - eps)) - ref) / eps;
+		gridSurf(vec3(p.x, p.y - eps, p.z)) - ref,
+		gridSurf(vec3(p.x, p.y, p.z - eps)) - ref) / eps;
 
 	grad -= nor * dot(nor, grad);
 
 	return normalize(nor + bumpfactor * grad);
 }
 
-vec2 raymarch(vec3 ro, vec3 rd, float steps)
+vec2 raycast(vec3 ro, vec3 rd, float steps)
 {
 	float mat = 0.0;
 	float t = 0.0;
@@ -171,12 +163,10 @@ vec2 raymarch(vec3 ro, vec3 rd, float steps)
 	for (float i = 0.0; i < steps; i++)
 	{
 		d = map(p);
-		mat = 0.0; // g_mat was never written in the source shader
+		mat = 0.0;
 
 		if (abs(d) < 0.0001 || t > 100.0)
-		{
 			break;
-		}
 
 		t += d;
 		p += rd * d;
@@ -197,29 +187,21 @@ void fragment()
 	vec3 lp2 = vec3(-3.0, 0.0, -5.0);
 
 	vec3 col = vec3(0.0);
-
 	float mat = 0.0;
-
 	vec2 e = vec2(0.0035, -0.0035);
-
-	// light color
 	vec3 lc1 = vec3(0.745, 0.761, 0.976);
 	vec3 lc2 = vec3(0.573, 0.922, 0.969);
 
-	// currently only one pass
 	for (float i = 0.0; i < 1.0; i++)
 	{
 		float steps = i > 0.0 ? 50.0 : 200.0;
-		vec2 rm = raymarch(ro, rd, steps);
+		vec2 rm = raycast(ro, rd, steps);
 		mat = rm.y;
 
 		vec3 p = ro + rm.x * rd;
-
 		vec3 n = normalize(e.xyy * map(p + e.xyy) + e.yyx * map(p + e.yyx) +
-				e.yxy * map(p + e.yxy) + e.xxx * map(p + e.xxx));
-
+			e.yxy * map(p + e.yxy) + e.xxx * map(p + e.xxx));
 		vec2 tuv = torusUV(p);
-
 		n = doBumpMap(vec3(tuv.x, 0.0, tuv.y * 2.0 * PI), n, 0.001);
 
 		if (rm.x < 50.0)
@@ -241,31 +223,24 @@ void fragment()
 			l = normalize(vec3(0.0, 1.0, 0.0));
 			vec3 difr = diffraction(-rd, n, normalize(tbn * td), l, 700.0);
 			col += 0.6 * (lc1 * dif + lc2 * dif2) + difr;
-
 			col = mix(col, col * (smoothstep(0.0, 1.0, sin(tuv.y * 150.0 + 10.0 * TIME * 0.6))), 0.5);
 
 			if (mat == 0.0)
 			{
 				rd = reflect(rd, n);
-
 				rd.yz *= rot(PI * 0.8);
-
 				vec3 refl = texture(iChannel0, rd).rgb;
-
 				refl = invGamma(refl);
-
 				col = mix(col, 0.7 * refl, 0.5);
 			}
 		}
 		else
-		{
 			col = invGamma(col);
-		}
 	}
 
 	col += mix(-NOISE_GRANULARITY, NOISE_GRANULARITY, random(uv));
-	col *= mix(0.2, 1.0, (1.5 - pow(dot(uv, uv), 0.5))); // vignette
-	col = gamma(col); // gamma
+	col *= mix(0.2, 1.0, (1.5 - pow(dot(uv, uv), 0.5)));
+	col = gamma(col);
 
 	COLOR = vec4(col, 1.0);
 }

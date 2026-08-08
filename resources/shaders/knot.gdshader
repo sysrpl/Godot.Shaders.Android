@@ -5,10 +5,7 @@ shader_type canvas_item;
 const int STEPS = 64;
 const float EPS = 0.01;
 const float FAR = 21.0;
-// const float TAU = 6.28318530718;
 
-// Set from script via mesh/material params if mouse-driven camera tilt is
-// ever wanted; defaults to "not pressed" so the camera follows its orbit.
 uniform vec4 mouse = vec4(0.0, 0.0, 0.0, 0.0);
 
 float knot(vec3 p, float k)
@@ -37,8 +34,8 @@ vec3 grad(vec3 p)
 {
 	vec2 q = vec2(0.0, EPS);
 	return vec3(map(p + q.yxx) - map(p - q.yxx),
-			map(p + q.xyx) - map(p - q.xyx),
-			map(p + q.xxy) - map(p - q.xxy));
+		map(p + q.xyx) - map(p - q.xyx),
+		map(p + q.xxy) - map(p - q.xxy));
 }
 
 vec3 bgColor(vec3 rd)
@@ -51,10 +48,7 @@ vec3 shade(vec3 ro, vec3 rd, float t, vec2 resolution)
 {
 	vec3 p = ro + t * rd;
 	for (int i = 0; i < 3; ++i)
-	{
 		p = p + rd * (map(p) - 4.0 * t / resolution.x);
-	}
-
 	vec3 n = normalize(grad(p));
 	return bgColor(reflect(rd, n)) * (0.2 + 0.8 * pow(1.0 - dot(-rd, n), 0.5));
 }
@@ -83,9 +77,7 @@ void fragment()
 	{
 		d = map(ro + t * rd);
 		if (d < EPS)
-		{
 			break;
-		}
 		t += 0.85 * d;
 	}
 	vec3 col = d < EPS ? shade(ro, rd, t, resolution) : bgColor(rd);
